@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Virtualized Primes (WASM)</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Every Prime Number</h1>
+      <p>Scroll through the primes. (Approximation)</p>
+      <div class="search-container">
+        <input
+          type="number"
+          id="jumpToInput"
+          placeholder="Jump to approx index..."
+        />
+        <button id="jumpToBtn">Go</button>
+      </div>
+    </header>
+    <div id="current-info">
+      <span id="currentInfo">Prime #0: ...</span>
+    </div>
+    <div id="viewport">
+      <div id="scrollableDiv">
+        <div id="scrollHeight"></div>
+        <div id="primes-container"></div>
+      </div>
+    </div>
+    <footer>
+      <p>
+        Powered by WebAssembly + Rust |
+        <a
+          href="https://github.com/yourusername/every-prime"
+          target="_blank"
+          >GitHub</a
+        >
+      </p>
+    </footer>
+    <script type="module">
+      import init, {
+        get_prime,
+        get_prime_index,
+      } from "./pkg/prime_generator.js";
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        try {
+          await init();
+
+          // --- Config ---
+          // TODO: It's actually rendering up to 2*Pi(MAX_PRIME_NUMBER)
+          const MAX_PRIME_NUMBER = BigInt(20_000_000);
+          const MAX_PRIME_INDEX = BigInt(get_prime_index(MAX_PRIME_NUMBER));
+          const ITEM_HEIGHT = 15
+          const BUFFER_ITEMS = 100;
+          const PLACEHOLDER_TEXT = "...";
+          // --- DOM ---
+          const scrollableDiv = document.getElementById("scrollableDiv");
+          const scrollHeightDiv = document.getElementById("scrollHeight");
+          const primesContainer = document.getElementById("primes-container");
+          const currentInfo = document.getElementById("currentInfo");
+          const jumpToInput = document.getElementById("jumpToInput");
+          const jumpToBtn = document.getElementById("jumpToBtn");
+
+          // --- State ---
+          let currentTopIndex = BigInt(0);
+          const primeCache = new Map();
+          const pendingLoads = new Set();
+
+          // --- Set scroll height ---
+          const conceptualHeight = Number(MAX_PRIME_INDEX) * ITEM_HEIGHT;
+          // TODO: Hack related to line 52
+          scrollHeightDiv.style.height = `${conceptualHeight / 2}px`;
+          console.log(MAX_PRIME_INDEX, Number(MAX_PRIME_INDEX)*ITEM_HEIGHT);
+
+          // --- Render logic ---
+          function updateView() {
+            const scrollTop = scrollableDiv.scrollTop;
+            const viewportHeight = scrollableDiv.clientHeight;
+            const itemsInViewport = Math.ceil(viewportHeight / ITEM_HEIGHT);
+            const maxStartIndex = Number(MAX_PRIME_INDEX) - itemsInViewport;
+
+            let startIndex = Math.floor(scrollTop / ITEM_HEIGHT);
+            if (startIndex < 0) startIndex = 0;
+            if (startIndex > maxStartIndex) startIndex = maxStartIndex;
+
+            currentTopIndex = BigInt(startIndex);
+
+            let endIndex = startIndex + itemsInViewport + BUFFER_ITEMS;
+            if (endIndex > Number(MAX_PRIME_INDEX)) endIndex = Number(MAX_PRIME_INDEX);
+
+            renderPrimes(BigInt(startIndex), BigInt(endIndex));
+            // Hack to show the 'correct' top index
+            updateCurrentInfo(BigInt(startIndex)+BigInt(startIndex));
+          }
+
+          function renderPrimes(startIndex, endIndex) {
+            primesContainer.innerHTML = "";
+            // Hack to keep rendering primes
+            for (let i = startIndex + startIndex; i < endIndex + startIndex; i = i + BigInt(1)) {
+              const indexStr = i.toString();
+              const elementY = Number(i - startIndex) * ITEM_HEIGHT;
+              const el = document.createElement("div");
+              el.className = "prime-item";
+              el.style.position = "absolute";
+              el.style.left = "0";
+              el.style.width = "100%";
+              el.style.height = `${ITEM_HEIGHT}px`;
+              el.style.transform = `translateY(${elementY}px)`;
+              el.innerHTML = `<span class="index">#${indexStr}</span> <span class="prime-value">${PLACEHOLDER_TEXT}</span>`;
+              primesContainer.appendChild(el);
+
+              // Fetch prime if not cached
+              if (primeCache.has(indexStr)) {
+                el.querySelector(".prime-value").textContent = primeCache.get(indexStr).toString();
+              } else if (!pendingLoads.has(indexStr)) {
+                pendingLoads.add(indexStr);
+                setTimeout(() => {
+                  try {
+                    const value = get_prime(Number(i));
+                    primeCache.set(indexStr, value);
+                    el.querySelector(".prime-value").textContent = value.toString();
+                  } catch (e) {
+                    el.querySelector(".prime-value").textContent = "Error";
+                  } finally {
+                    pendingLoads.delete(indexStr);
+                  }
+                }, 0);
+              }
+            }
+          }
+
+          function updateCurrentInfo(topIndex) {
+            const el = primesContainer.querySelector(".prime-item .prime-value");
+            let value = PLACEHOLDER_TEXT;
+            if (el) value = el.textContent;
+            currentInfo.textContent = `Prime #${topIndex}: ${value}`;
+          }
+
+          // --- Scroll event ---
+          scrollableDiv.addEventListener("scroll", () => {
+            requestAnimationFrame(updateView);
+          });
+
+          // --- Jump to index ---
+          function handleJump() {
+            const indexStr = jumpToInput.value;
+            if (!indexStr) return;
+            let targetIndex = BigInt(indexStr);
+            if (targetIndex < 0) targetIndex = BigInt(0);
+            if (targetIndex >= MAX_PRIME_INDEX)
+              targetIndex = MAX_PRIME_INDEX - BigInt(1);
+
+            // Scroll so that targetIndex is at the top
+            const scrollTop = Number(targetIndex) * ITEM_HEIGHT;
+            scrollableDiv.scrollTop = scrollTop;
+            requestAnimationFrame(updateView);
+
+            jumpToInput.value = "";
+            jumpToInput.blur();
+          }
+          jumpToBtn.addEventListener("click", handleJump);
+          jumpToInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") handleJump();
+          });
+
+          // --- Initial render ---
+          updateView();
+        } catch (error) {
+          document.body.innerHTML = `<div style="color:red;padding:2em;">Failed to initialize WebAssembly module: ${error}</div>`;
+        }
+      });
+    </script>
+  </body>
+</html>
+
