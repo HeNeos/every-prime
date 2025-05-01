@@ -297,7 +297,7 @@ button:hover {
   visibility: hidden;
 }
 
-#fibonacci-container {
+#prime-container {
   position: absolute;
   left: 0;
   right: 0;
@@ -308,7 +308,7 @@ button:hover {
   will-change: transform;
 }
 
-.fibonacci-item {
+.prime-item {
   position: absolute;
   left: 15px;
   right: 15px;
@@ -329,11 +329,11 @@ button:hover {
   transition: background-color 0.15s, border-color 0.2s;
 }
 
-.fibonacci-item:hover {
+.prime-item:hover {
   background-color: var(--item-hover-bg);
 }
 
-.fibonacci-item .index {
+.prime-item .index {
   color: var(--item-index-color);
   font-size: 0.75rem;
   min-width: 80px;
@@ -343,7 +343,7 @@ button:hover {
   font-family: var(--sans-serif-font);
 }
 
-.fibonacci-value {
+.prime-value {
   color: var(--item-value-color);
   word-break: keep-all;
   white-space: nowrap;
@@ -465,14 +465,14 @@ footer a:hover {
     bottom: 40px;
   }
 
-  .fibonacci-item {
+  .prime-item {
     left: 10px;
     right: 10px;
     font-size: 0.8125rem;
     padding: 4px 8px;
   }
 
-  .fibonacci-item .index {
+  .prime-item .index {
     font-size: 0.6875rem;
     min-width: 60px;
     padding-right: 10px;
@@ -516,11 +516,11 @@ footer a:hover {
     font-size: 0.625rem;
   }
 
-  .fibonacci-item {
+  .prime-item {
     font-size: 0.75rem;
   }
 
-  .fibonacci-item .index {
+  .prime-item .index {
     font-size: 0.625rem;
     min-width: 50px;
     padding-right: 5px;

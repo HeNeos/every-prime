@@ -4,14 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prime Number Explorer</title>
+  <title>(Almost) Every Prime Number</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
   <header>
-    <h1>Prime Number Explorer</h1>
-    <p>Scroll through the sequence of prime numbers.</p>
+    <h1>(Almost) Every Prime Number</h1>
+    <p>Scroll through (a long) sequence of prime numbers.</p>
     <div class="search-container">
       <input type="text" id="jumpToInput" placeholder="Jump to index (e.g., 1000)..." />
       <button id="jumpToBtn">Go</button>
@@ -23,7 +23,7 @@
   <div id="viewport">
     <div id="scrollableDiv">
       <div id="scrollHeight"></div>
-      <div id="fibonacci-container"></div>
+      <div id="prime-container"></div>
     </div>
   </div>
   <div class="side-panel">
@@ -54,12 +54,12 @@
       try {
         await init();
 
-        const SCROLL_HEIGHT = 1000000;
+        const SCROLL_HEIGHT = 20000;
         // const MAX_INDEX = 4294967295; // 2^32 - 1
-        const MAX_INDEX = 1 << 22;
+        const MAX_INDEX = 1n << 27n - 1n;
         const ITEM_HEIGHT = 30;
         const calculateVisibleItems = () =>
-          Math.ceil(window.innerHeight / ITEM_HEIGHT) + 16;
+          Math.ceil(window.innerHeight / ITEM_HEIGHT) + 15;
         let VISIBLE_ITEMS = calculateVisibleItems();
         const SPACEBAR_SCROLL_LINES = 10;
         const TOUCH_STEP_THRESHOLD = ITEM_HEIGHT * 0.7;
@@ -69,7 +69,7 @@
 
         const scrollableDiv = document.getElementById("scrollableDiv");
         const scrollHeightDiv = document.getElementById("scrollHeight");
-        const primesContainer = document.getElementById("fibonacci-container");
+        const primesContainer = document.getElementById("prime-container");
         const currentInfo = document.getElementById("currentInfo");
         const jumpToInput = document.getElementById("jumpToInput");
         const jumpToBtn = document.getElementById("jumpToBtn");
@@ -178,13 +178,13 @@
 
             // First render the current position
             let el = document.createElement("div");
-            el.className = "fibonacci-item";
+            el.className = "prime-item";
             el.style.position = "absolute";
             el.style.left = "0";
             el.style.right = "0";
             el.style.height = `${ITEM_HEIGHT}px`;
             el.style.transform = `translateY(${baseScrollTop}px)`;
-            el.innerHTML = `<span class="index">P(${startIndex.toString()})</span> <span class="fibonacci-value">${p_k.toString()}</span>`;
+            el.innerHTML = `<span class="index">P(${startIndex.toString()})</span> <span class="prime-value">${p_k.toString()}</span>`;
             primesContainer.appendChild(el);
 
             // Render items above current position (previous primes)
@@ -206,13 +206,13 @@
 
                 const y = baseScrollTop - i * ITEM_HEIGHT;
                 el = document.createElement("div");
-                el.className = "fibonacci-item";
+                el.className = "prime-item";
                 el.style.position = "absolute";
                 el.style.left = "0";
                 el.style.right = "0";
                 el.style.height = `${ITEM_HEIGHT}px`;
                 el.style.transform = `translateY(${y}px)`;
-                el.innerHTML = `<span class="index">P(${prevIdx.toString()})</span> <span class="fibonacci-value">${prevPrime.toString()}</span>`;
+                el.innerHTML = `<span class="index">P(${prevIdx.toString()})</span> <span class="prime-value">${prevPrime.toString()}</span>`;
                 primesContainer.appendChild(el);
               } catch (e) {
                 console.error("Error getting previous prime:", e);
@@ -239,13 +239,13 @@
 
                 const y = baseScrollTop + i * ITEM_HEIGHT;
                 el = document.createElement("div");
-                el.className = "fibonacci-item";
+                el.className = "prime-item";
                 el.style.position = "absolute";
                 el.style.left = "0";
                 el.style.right = "0";
                 el.style.height = `${ITEM_HEIGHT}px`;
                 el.style.transform = `translateY(${y}px)`;
-                el.innerHTML = `<span class="index">P(${nextIdx.toString()})</span> <span class="fibonacci-value">${nextPrime.toString()}</span>`;
+                el.innerHTML = `<span class="index">P(${nextIdx.toString()})</span> <span class="prime-value">${nextPrime.toString()}</span>`;
                 primesContainer.appendChild(el);
               } catch (e) {
                 console.error("Error getting next prime:", e);
