@@ -1,40 +1,140 @@
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/jetbrains-mono@latest/fonts/webfonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/jetbrains-mono@latest/fonts/webfonts/JetBrainsMono-Bold.woff2') format('woff2');
+}
+
+:root {
+  --bg-color: #f4fafa;
+  --text-color: #2a3f4f;
+  --header-bg: #ffffff;
+  --header-shadow: rgba(42, 63, 79, 0.07);
+  --footer-bg: #eafafa;
+  --footer-border: #cce0e0;
+  --subtle-text-color: #6a7f8f;
+  --link-color: #008080;
+  --link-hover-color: #006060;
+  --button-bg: #008080;
+  --button-text: #ffffff;
+  --button-border: 1px solid #008080;
+  --button-hover-bg: #006060;
+  --button-hover-border: 1px solid #006060;
+  --input-border: #b0c0c0;
+  --input-bg: #ffffff;
+  --input-focus-border: #008080;
+  --item-bg: transparent;
+  --item-hover-bg: #eafafa;
+  --item-border: #d8eeee;
+  --item-index-color: #6a7f8f;
+  --item-value-color: #2a3f4f;
+  --leading-zeros-color: #9ab0c0;
+  --leading-zeros-opacity: 0.8;
+  --info-bg: rgba(255, 255, 255, 0.95);
+  --info-shadow: rgba(42, 63, 79, 0.1);
+  --info-border: 1px solid #d8eeee;
+  --error-bg: #ffe0e0;
+  --error-text: #a03030;
+  --scrollbar-thumb: #9ab0c0;
+  --scrollbar-track: #eafafa;
+  --scrollbar-thumb-border: #eafafa;
+
+  --sans-serif-font: "JetBrains Mono", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol";
+  --monospace-font: "JetBrains Mono", "SFMono-Regular", Consolas,
+    "Liberation Mono", Menlo, Courier, monospace;
+
+  --item-height: 30px;
+  --border-radius: 4px;
+  --panel-width: 20px;
+}
+
+body.dark-mode {
+  --bg-color: #282a36;
+  --text-color: #f8f8f2;
+  --header-bg: #44475a;
+  --header-shadow: rgba(0, 0, 0, 0.2);
+  --footer-bg: #44475a;
+  --footer-border: #6272a4;
+  --subtle-text-color: #48b4b9;
+  --link-color: #bd93f9;
+  --link-hover-color: #ff79c4;
+  --button-bg: #282a36;
+  --button-text: #f8f8f2;
+  --button-border: 1px solid #bd93f9;
+  --button-hover-bg: #ff79c4;
+  --button-hover-border: 1px solid #ff79c4;
+  --input-border: #6272a4;
+  --input-bg: #282a36;
+  --input-focus-border: #bd93f9;
+  --item-bg: transparent;
+  --item-hover-bg: #44475a;
+  --item-border: #44475a;
+  --item-index-color: #987ac4;
+  --item-value-color: #f8f8f2;
+  --leading-zeros-color: #6272a4;
+  --leading-zeros-opacity: 0.7;
+  --info-bg: rgba(40, 42, 54, 0.95);
+  --info-shadow: rgba(0, 0, 0, 0.3);
+  --info-border: 1px solid #6272a4;
+  --error-bg: #4d1f1f;
+  --error-text: #ff5555;
+  --scrollbar-thumb: #6272a4;
+  --scrollbar-track: #282a36;
+  --scrollbar-thumb-border: #282a36;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
-  overflow: hidden; /* Prevent body scrolling */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
+  font-family: var(--sans-serif-font);
   line-height: 1.6;
-  color: #333;
-  background-color: #fff;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  transition: background-color 0.2s, color 0.2s;
 }
 
 header {
-  position: absolute; /* Or fixed */
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  background-color: #fff;
-  padding: 15px 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--header-bg);
+  padding: 10px 10px;
+  box-shadow: 0 1px 3px var(--header-shadow);
   z-index: 100;
   text-align: center;
-  height: 120px; /* Fixed height for header */
+  height: auto;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  border-bottom: 1px solid var(--footer-border);
 }
 
 h1 {
-  font-size: 2rem;
-  margin-bottom: 5px;
+  font-size: 1.5rem;
+  margin-bottom: 1px;
+  font-weight: 600;
 }
 
 header p {
-  color: #666;
-  margin-bottom: 15px;
+  color: var(--subtle-text-color);
+  margin-bottom: 10px;
+  font-size: 0.9rem;
 }
 
 .search-container {
@@ -43,156 +143,386 @@ header p {
   gap: 10px;
   max-width: 400px;
   margin: 0 auto;
+  padding: 0 10px;
 }
 
-input {
+.search-container input[type="text"] {
   padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-family: var(--monospace-font);
   flex-grow: 1;
+  min-width: 150px;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+
+.search-container input[type="text"]:focus {
+  border-color: var(--input-focus-border);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--input-focus-border), 0.3);
 }
 
 button {
   padding: 8px 16px;
-  background-color: #0366d6;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: var(--button-border);
+  border-radius: var(--border-radius);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 1rem;
+  font-family: var(--sans-serif-font);
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
 button:hover {
-  background-color: #0258b8;
+  background-color: var(--button-hover-bg);
+  border-color: var(--button-hover-border);
 }
 
 #current-info {
-  position: fixed; /* Fixed position */
-  top: 130px; /* Below header */
+  position: fixed;
+  top: 15px;
   right: 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 8px 12px;
-  border-radius: 4px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
-  font-family: monospace;
-  font-size: 13px;
+  background-color: var(--info-bg);
+  padding: 6px 10px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 1px 3px var(--info-shadow);
+  font-family: var(--monospace-font);
+  font-size: 0.75rem;
   z-index: 110;
   white-space: nowrap;
+  color: var(--text-color);
+  border: var(--info-border);
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
 #viewport {
   position: absolute;
-  top: 120px; /* Below header */
-  bottom: 40px; /* Above footer */
-  left: 0;
+  top: 130px;
+  bottom: 40px;
+  left: var(--panel-width);
   right: 0;
   overflow: hidden;
-  /* overflow-y: scroll; /* This is the crucial scroll container */
-  /* overflow-x: hidden; */
-  -webkit-overflow-scrolling: touch;
-  /* background-color: #eee; */ /* Optional: for debugging */
+}
+
+.side-panel {
+  position: absolute;
+  top: 130px;
+  bottom: 40px;
+  left: 0;
+  width: var(--panel-width);
+  display: flex;
+  flex-direction: column;
+  z-index: 150;
+  user-select: none;
+  touch-action: none;
+}
+
+.side-panel .panel-btn {
+  padding-left: 0;
+  padding-right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+.panel-btn {
+  flex: 1;
+  border: 0px;
+  border-left: none;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  font-size: 1rem;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.panel-btn:first-child {
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+  border-bottom: none;
+}
+
+.panel-btn:last-child {
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+.panel-btn:hover {
+  background-color: var(--footer-border);
 }
 
 #scrollableDiv {
   height: 100%;
-  width: 100%; /* Ensure it fills viewport */
-  overflow-y: scroll; /* Enable scrolling */
+  width: 100%;
+  overflow-y: scroll;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  position: relative; /* Needed for absolute positioning of primesContainer */
+  position: relative;
+  touch-action: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  overscroll-behavior: none;
+}
+
+#scrollableDiv::-webkit-scrollbar {
+  width: 10px;
+}
+
+#scrollableDiv::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 5px;
+  border: 2px solid var(--scrollbar-thumb-border);
+}
+
+#scrollableDiv::-webkit-scrollbar-track {
+  background-color: var(--scrollbar-track);
+  border-radius: 5px;
 }
 
 #scrollHeight {
-  /* This element defines the scroll range */
   width: 1px;
-  /* height is set by JS (VIRTUAL_SCROLL_PIXELS) */
-  float: left; /* Make it take up space without affecting flex/grid */
+  float: left;
   visibility: hidden;
 }
 
-#primes-container {
-  /* This container holds the visible items */
-  position: absolute; /* Changed from absolute */
-  /* top: 0; */ /* Position is now controlled by transform */
+#fibonacci-container {
+  position: absolute;
   left: 0;
   right: 0;
   top: 0;
-  /* height: 100%; */ /* Let its height be determined by content? No, transform handles positioning */
-  max-width: 800px; /* Centering */
-  margin: 0 auto; /* Centering */
-  padding: 0 20px; /* Side padding */
-  /* background-color: rgba(255, 0, 0, 0.1); */ /* Optional: for debugging */
-  /* transform is set by JS */
-  will-change: transform; /* Hint for performance */
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 15px;
+  will-change: transform;
 }
 
-.prime-item {
-  position: absolute; /* Positioned relative to primes-container's transformed position */
-  left: 20px; /* Align with container padding */
-  right: 20px; /* Align with container padding */
-  /* height is set by JS (ITEM_HEIGHT) */
-  /* transform: translateY is set by JS */
-
+.fibonacci-item {
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  cursor: default;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 15px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #eee;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 15px;
+  padding: 5px 10px;
+  background-color: var(--item-bg);
+  border-bottom: 1px solid var(--item-border);
+  border-radius: 0;
+  font-family: var(--monospace-font);
+  font-size: 0.875rem;
   box-sizing: border-box;
   overflow: hidden;
-  will-change: transform; /* Hint for performance */
+  will-change: transform;
+  height: var(--item-height) !important;
+  transition: background-color 0.15s, border-color 0.2s;
 }
 
-.prime-item:hover {
-  background-color: #eef2f5;
+.fibonacci-item:hover {
+  background-color: var(--item-hover-bg);
 }
 
-.prime-item .index {
-  color: #666;
-  font-size: 13px;
-  min-width: 100px; /* Wider to accommodate larger indices */
+.fibonacci-item .index {
+  color: var(--item-index-color);
+  font-size: 0.75rem;
+  min-width: 80px;
   flex-shrink: 0;
+  padding-right: 15px;
+  text-align: left;
+  font-family: var(--sans-serif-font);
 }
 
-.prime-value {
-  font-weight: bold;
-  word-break: break-all;
+.fibonacci-value {
+  color: var(--item-value-color);
+  word-break: keep-all;
+  white-space: nowrap;
   text-align: right;
   flex-grow: 1;
+  transition: color 0.2s;
+}
+
+.leading-zeros {
+  color: var(--leading-zeros-color);
+  opacity: var(--leading-zeros-opacity);
+  transition: color 0.2s;
 }
 
 footer {
-  position: absolute; /* Or fixed */
+  position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  text-align: center;
-  padding: 10px;
-  background-color: #fff;
-  color: #666;
-  font-size: 14px;
-  border-top: 1px solid #eee;
-  height: 40px; /* Fixed height for footer */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  background-color: var(--footer-bg);
+  color: var(--subtle-text-color);
+  font-size: 0.8125rem;
+  border-top: 1px solid var(--footer-border);
+  height: 40px;
   z-index: 100;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+footer p {
+  margin: 0;
 }
 
 footer a {
-  color: #0366d6;
+  color: var(--link-color);
   text-decoration: none;
+}
+
+footer a:hover {
+  color: var(--link-hover-color);
+  text-decoration: underline;
+}
+
+#theme-toggle {
+  background: none;
+  border: 1px solid var(--input-border);
+  color: var(--subtle-text-color);
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-family: var(--sans-serif-font);
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+#theme-toggle:hover {
+  background-color: var(--item-hover-bg);
+  color: var(--text-color);
+  border-color: var(--subtle-text-color);
 }
 
 .error {
   max-width: 600px;
-  margin: 150px auto; /* Adjust margin */
+  margin: 150px auto;
   text-align: center;
   padding: 30px;
-  background-color: #fff0f0;
-  border-radius: 8px;
-  color: #d32f2f;
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-text);
+  border-radius: var(--border-radius);
+  color: var(--error-text);
+  font-family: var(--sans-serif-font);
 }
 
+@media (max-width: 768px) {
+  header {
+    padding: 11px 15px;
+    height: auto;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+  }
+
+  header p {
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+  }
+
+  .search-container {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+    max-width: 90%;
+  }
+
+  .search-container input[type="text"] {
+    font-size: 0.75rem;
+  }
+
+  #current-info {
+    top: auto !important;
+    right: auto !important;
+    bottom: 50px !important;
+    left: 5px !important;
+    z-index: 200;
+    font-size: 0.6875rem;
+  }
+
+  #viewport {
+    top: 160px;
+    left: var(--panel-width);
+  }
+
+  .side-panel {
+    top: 160px;
+    bottom: 40px;
+  }
+
+  .fibonacci-item {
+    left: 10px;
+    right: 10px;
+    font-size: 0.8125rem;
+    padding: 4px 8px;
+  }
+
+  .fibonacci-item .index {
+    font-size: 0.6875rem;
+    min-width: 60px;
+    padding-right: 10px;
+  }
+
+  footer {
+    font-size: 0.75rem;
+    padding: 0 10px;
+  }
+
+  #theme-toggle {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  header {
+    padding: 16px 15px;
+    height: auto;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+  }
+
+  header p {
+    font-size: 0.68rem;
+  }
+
+  button {
+    font-size: 0.75rem;
+  }
+
+  .search-container input[type="text"] {
+    font-size: 0.68rem;
+  }
+
+  #current-info {
+    left: calc(var(--panel-width) + 10px) !important;
+    right: auto;
+    font-size: 0.625rem;
+  }
+
+  .fibonacci-item {
+    font-size: 0.75rem;
+  }
+
+  .fibonacci-item .index {
+    font-size: 0.625rem;
+    min-width: 50px;
+    padding-right: 5px;
+  }
+}

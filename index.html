@@ -1,176 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Virtualized Primes (WASM)</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <header>
-      <h1>Every Prime Number</h1>
-      <p>Scroll through the primes. (Approximation)</p>
-      <div class="search-container">
-        <input
-          type="number"
-          id="jumpToInput"
-          placeholder="Jump to approx index..."
-        />
-        <button id="jumpToBtn">Go</button>
-      </div>
-    </header>
-    <div id="current-info">
-      <span id="currentInfo">Prime #0: ...</span>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prime Number Explorer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header>
+    <h1>Prime Number Explorer</h1>
+    <p>Scroll through the sequence of prime numbers.</p>
+    <div class="search-container">
+      <input type="text" id="jumpToInput" placeholder="Jump to index (e.g., 1000)..." />
+      <button id="jumpToBtn">Go</button>
     </div>
-    <div id="viewport">
-      <div id="scrollableDiv">
-        <div id="scrollHeight"></div>
-        <div id="primes-container"></div>
-      </div>
+  </header>
+  <div id="current-info">
+    <span id="currentInfo">Prime #1: 2</span>
+  </div>
+  <div id="viewport">
+    <div id="scrollableDiv">
+      <div id="scrollHeight"></div>
+      <div id="fibonacci-container"></div>
     </div>
-    <footer>
-      <p>
-        Powered by WebAssembly + Rust |
-        <a
-          href="https://github.com/yourusername/every-prime"
-          target="_blank"
-          >GitHub</a
-        >
-      </p>
-    </footer>
-    <script type="module">
-      import init, {
-        get_prime,
-        get_prime_index,
-      } from "./pkg/prime_generator.js";
+  </div>
+  <div class="side-panel">
+    <button id="panel-up" class="panel-btn" aria-label="Scroll up">
+      ▲
+    </button>
+    <button id="panel-down" class="panel-btn" aria-label="Scroll down">
+      ▼
+    </button>
+  </div>
+  <footer>
+    <p>
+      Powered by WebAssembly + Rust |
+      <a href="https://github.com/HeNeos/prime-explorer" target="_blank">GitHub</a>
+    </p>
+    <button id="theme-toggle">Toggle Theme</button>
+  </footer>
 
-      document.addEventListener("DOMContentLoaded", async () => {
-        try {
-          await init();
+  <script type="module">
+    import init, {
+      init_pair,
+      next_pair,
+      prev_pair,
+      get_current_index,
+    } from "./pkg/prime_generator.js";
 
-          // --- Config ---
-          // TODO: It's actually rendering up to 2*Pi(MAX_PRIME_NUMBER)
-          const MAX_PRIME_NUMBER = BigInt(20_000_000);
-          const MAX_PRIME_INDEX = BigInt(get_prime_index(MAX_PRIME_NUMBER));
-          const ITEM_HEIGHT = 15
-          const BUFFER_ITEMS = 100;
-          const PLACEHOLDER_TEXT = "...";
-          // --- DOM ---
-          const scrollableDiv = document.getElementById("scrollableDiv");
-          const scrollHeightDiv = document.getElementById("scrollHeight");
-          const primesContainer = document.getElementById("primes-container");
-          const currentInfo = document.getElementById("currentInfo");
-          const jumpToInput = document.getElementById("jumpToInput");
-          const jumpToBtn = document.getElementById("jumpToBtn");
+    async function run() {
+      try {
+        await init();
 
-          // --- State ---
-          let currentTopIndex = BigInt(0);
-          const primeCache = new Map();
-          const pendingLoads = new Set();
+        const SCROLL_HEIGHT = 1000000;
+        // const MAX_INDEX = 4294967295; // 2^32 - 1
+        const MAX_INDEX = 1 << 22;
+        const ITEM_HEIGHT = 30;
+        const calculateVisibleItems = () =>
+          Math.ceil(window.innerHeight / ITEM_HEIGHT) + 16;
+        let VISIBLE_ITEMS = calculateVisibleItems();
+        const SPACEBAR_SCROLL_LINES = 10;
+        const TOUCH_STEP_THRESHOLD = ITEM_HEIGHT * 0.7;
+        const TOUCH_MOVE_INTERVAL_MS = 100;
+        const SCROLL_UPDATE_THRESHOLD = 16n;
+        const SCROLL_THROTTLE_MS = 1;
 
-          // --- Set scroll height ---
-          const conceptualHeight = Number(MAX_PRIME_INDEX) * ITEM_HEIGHT;
-          // TODO: Hack related to line 52
-          scrollHeightDiv.style.height = `${conceptualHeight / 2}px`;
-          console.log(MAX_PRIME_INDEX, Number(MAX_PRIME_INDEX)*ITEM_HEIGHT);
+        const scrollableDiv = document.getElementById("scrollableDiv");
+        const scrollHeightDiv = document.getElementById("scrollHeight");
+        const primesContainer = document.getElementById("fibonacci-container");
+        const currentInfo = document.getElementById("currentInfo");
+        const jumpToInput = document.getElementById("jumpToInput");
+        const jumpToBtn = document.getElementById("jumpToBtn");
+        const viewport = document.getElementById("viewport");
+        const themeToggleBtn = document.getElementById("theme-toggle");
+        const panelUp = document.getElementById("panel-up");
+        const panelDown = document.getElementById("panel-down");
 
-          // --- Render logic ---
-          function updateView() {
-            const scrollTop = scrollableDiv.scrollTop;
-            const viewportHeight = scrollableDiv.clientHeight;
-            const itemsInViewport = Math.ceil(viewportHeight / ITEM_HEIGHT);
-            const maxStartIndex = Number(MAX_PRIME_INDEX) - itemsInViewport;
+        let currentIndex = 1n; // Prime indices start at 1
+        let currentPrime = 2n;  // First prime is 2
+        let isDraggingScrollbar = false;
+        let isTouching = false;
+        let isTouchScrolling = false;
+        let touchStartY = 0;
+        let isProcessingStep = false;
+        let scrollThrottleTimeout = null;
+        let isJumping = false;
+        let touchMoveInterval = null;
+        let touchMoveDirection = 0;
 
-            let startIndex = Math.floor(scrollTop / ITEM_HEIGHT);
-            if (startIndex < 0) startIndex = 0;
-            if (startIndex > maxStartIndex) startIndex = maxStartIndex;
+        scrollHeightDiv.style.height = `${SCROLL_HEIGHT}px`;
 
-            currentTopIndex = BigInt(startIndex);
+        function attachPanelButton(btn, dir) {
+          let intervalId = null;
+          btn.addEventListener(
+            "pointerdown",
+            (e) => {
+              if (e.pointerType !== "touch" && e.pointerType !== "mouse")
+                return;
+              handleStepScroll(dir);
+              intervalId = setInterval(
+                () => handleStepScroll(dir),
+                TOUCH_MOVE_INTERVAL_MS
+              );
+              e.preventDefault();
+            },
+            { passive: false }
+          );
+          ["pointerup", "pointerleave", "pointercancel"].forEach((evt) =>
+            btn.addEventListener(evt, () => {
+              if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+              }
+            })
+          );
+        }
 
-            let endIndex = startIndex + itemsInViewport + BUFFER_ITEMS;
-            if (endIndex > Number(MAX_PRIME_INDEX)) endIndex = Number(MAX_PRIME_INDEX);
+        attachPanelButton(panelUp, -1);
+        attachPanelButton(panelDown, 1);
 
-            renderPrimes(BigInt(startIndex), BigInt(endIndex));
-            // Hack to show the 'correct' top index
-            updateCurrentInfo(BigInt(startIndex)+BigInt(startIndex));
+        function applyTheme(theme) {
+          if (theme === "dark") {
+            document.body.classList.add("dark-mode");
+            localStorage.setItem("primeTheme", "dark");
+          } else {
+            document.body.classList.remove("dark-mode");
+            localStorage.setItem("primeTheme", "light");
           }
+        }
+        themeToggleBtn.addEventListener("click", () => {
+          const currentTheme = document.body.classList.contains("dark-mode")
+            ? "dark"
+            : "light";
+          applyTheme(currentTheme === "dark" ? "light" : "dark");
+        });
+        const savedTheme = localStorage.getItem("primeTheme");
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        if (savedTheme) {
+          applyTheme(savedTheme);
+        } else {
+          applyTheme(prefersDark ? "dark" : "light");
+        }
 
-          function renderPrimes(startIndex, endIndex) {
+        function scrollToIndex(scrollPos) {
+          scrollPos = Math.max(0, Math.min(SCROLL_HEIGHT, scrollPos));
+          if (scrollPos <= 0) return 1n;
+          if (scrollPos >= SCROLL_HEIGHT) return BigInt(MAX_INDEX);
+          const scrollPosBigInt = BigInt(Math.round(scrollPos));
+          const scrollHeightBigInt = BigInt(SCROLL_HEIGHT);
+          const maxIndexBigInt = BigInt(MAX_INDEX);
+          // Map scroll position to an index between 1 and MAX_INDEX
+          const index = 1n + (scrollPosBigInt * (maxIndexBigInt - 1n)) / scrollHeightBigInt;
+          return index < maxIndexBigInt ? index : maxIndexBigInt;
+        }
+
+        function indexToScroll(index) {
+          if (typeof index !== "bigint") index = BigInt(index);
+          if (index <= 1n) return 0;
+          if (index >= BigInt(MAX_INDEX)) return SCROLL_HEIGHT;
+          const scrollHeightBigInt = BigInt(SCROLL_HEIGHT);
+          const maxIndexBigInt = BigInt(MAX_INDEX);
+          const scrollPosBigInt = ((index - 1n) * scrollHeightBigInt) / (maxIndexBigInt - 1n);
+          return Number(scrollPosBigInt);
+        }
+
+        function renderVisibleWindow(startIndex, startPrime) {
+          try {
+            startIndex = startIndex < 1n ? 1n : startIndex;
+            startIndex = startIndex > BigInt(MAX_INDEX) ? BigInt(MAX_INDEX) : startIndex;
             primesContainer.innerHTML = "";
-            // Hack to keep rendering primes
-            for (let i = startIndex + startIndex; i < endIndex + startIndex; i = i + BigInt(1)) {
-              const indexStr = i.toString();
-              const elementY = Number(i - startIndex) * ITEM_HEIGHT;
-              const el = document.createElement("div");
-              el.className = "prime-item";
-              el.style.position = "absolute";
-              el.style.left = "0";
-              el.style.width = "100%";
-              el.style.height = `${ITEM_HEIGHT}px`;
-              el.style.transform = `translateY(${elementY}px)`;
-              el.innerHTML = `<span class="index">#${indexStr}</span> <span class="prime-value">${PLACEHOLDER_TEXT}</span>`;
-              primesContainer.appendChild(el);
+            let p_k = startPrime;
+            const baseScrollTop = indexToScroll(startIndex);
 
-              // Fetch prime if not cached
-              if (primeCache.has(indexStr)) {
-                el.querySelector(".prime-value").textContent = primeCache.get(indexStr).toString();
-              } else if (!pendingLoads.has(indexStr)) {
-                pendingLoads.add(indexStr);
-                setTimeout(() => {
-                  try {
-                    const value = get_prime(Number(i));
-                    primeCache.set(indexStr, value);
-                    el.querySelector(".prime-value").textContent = value.toString();
-                  } catch (e) {
-                    el.querySelector(".prime-value").textContent = "Error";
-                  } finally {
-                    pendingLoads.delete(indexStr);
-                  }
-                }, 0);
+            // First render the current position
+            let el = document.createElement("div");
+            el.className = "fibonacci-item";
+            el.style.position = "absolute";
+            el.style.left = "0";
+            el.style.right = "0";
+            el.style.height = `${ITEM_HEIGHT}px`;
+            el.style.transform = `translateY(${baseScrollTop}px)`;
+            el.innerHTML = `<span class="index">P(${startIndex.toString()})</span> <span class="fibonacci-value">${p_k.toString()}</span>`;
+            primesContainer.appendChild(el);
+
+            // Render items above current position (previous primes)
+            let prevIdx = startIndex;
+            let prevPrime = p_k;
+
+            // Store temporary state
+            const tempState = { ...init_pair(startIndex) };
+
+            for (let i = 1; i < Math.ceil(VISIBLE_ITEMS / 2); i++) {
+              if (prevIdx <= 1n) {
+                break;
+              }
+              try {
+                // Calculate previous prime using our backend function
+                const prevPair = prev_pair();
+                prevIdx = BigInt(get_current_index());
+                prevPrime = BigInt(prevPair[0]);
+
+                const y = baseScrollTop - i * ITEM_HEIGHT;
+                el = document.createElement("div");
+                el.className = "fibonacci-item";
+                el.style.position = "absolute";
+                el.style.left = "0";
+                el.style.right = "0";
+                el.style.height = `${ITEM_HEIGHT}px`;
+                el.style.transform = `translateY(${y}px)`;
+                el.innerHTML = `<span class="index">P(${prevIdx.toString()})</span> <span class="fibonacci-value">${prevPrime.toString()}</span>`;
+                primesContainer.appendChild(el);
+              } catch (e) {
+                console.error("Error getting previous prime:", e);
+                break;
               }
             }
+
+            // Restore state to start position
+            init_pair(startIndex);
+
+            // Render items below current position (next primes)
+            let nextIdx = startIndex;
+            let nextPrime = p_k;
+
+            for (let i = 1; i < Math.ceil(VISIBLE_ITEMS / 2); i++) {
+              if (nextIdx >= BigInt(MAX_INDEX)) {
+                break;
+              }
+              try {
+                // Calculate next prime using our backend function
+                const nextPair = next_pair();
+                nextIdx = BigInt(get_current_index());
+                nextPrime = BigInt(nextPair[0]);
+
+                const y = baseScrollTop + i * ITEM_HEIGHT;
+                el = document.createElement("div");
+                el.className = "fibonacci-item";
+                el.style.position = "absolute";
+                el.style.left = "0";
+                el.style.right = "0";
+                el.style.height = `${ITEM_HEIGHT}px`;
+                el.style.transform = `translateY(${y}px)`;
+                el.innerHTML = `<span class="index">P(${nextIdx.toString()})</span> <span class="fibonacci-value">${nextPrime.toString()}</span>`;
+                primesContainer.appendChild(el);
+              } catch (e) {
+                console.error("Error getting next prime:", e);
+                break;
+              }
+            }
+
+            // Restore state to start position again
+            init_pair(startIndex);
+
+            updateCurrentInfo(startIndex, startPrime);
+
+            if (!isDraggingScrollbar && !isTouching && !isProcessingStep) {
+              const targetScrollTop = indexToScroll(startIndex);
+              if (Math.abs(scrollableDiv.scrollTop - targetScrollTop) > ITEM_HEIGHT / 2) {
+                scrollableDiv.scrollTop = targetScrollTop;
+              }
+            }
+          } catch (e) {
+            console.error("Error during rendering:", e);
+            currentInfo.innerHTML = `<span style="color: red;">Render Error</span>`;
+          }
+        }
+
+        function updateCurrentInfo(index, value) {
+          currentInfo.innerHTML = `Prime #${index.toString()}: ${value.toString()}`;
+        }
+
+        window.addEventListener("resize", () => {
+          VISIBLE_ITEMS = calculateVisibleItems();
+          renderVisibleWindow(currentIndex, currentPrime);
+        });
+
+        scrollableDiv.addEventListener("mousedown", (e) => {
+          if (e.offsetX >= scrollableDiv.clientWidth) {
+            isDraggingScrollbar = true;
+            clearTimeout(scrollThrottleTimeout);
+          }
+        });
+        window.addEventListener("mouseup", () => {
+          if (isDraggingScrollbar) {
+            isDraggingScrollbar = false;
+          }
+        });
+
+        scrollableDiv.addEventListener("scroll", () => {
+          if (isProcessingStep) {
+            return;
+          }
+          if (isJumping) {
+            return;
           }
 
-          function updateCurrentInfo(topIndex) {
-            const el = primesContainer.querySelector(".prime-item .prime-value");
-            let value = PLACEHOLDER_TEXT;
-            if (el) value = el.textContent;
-            currentInfo.textContent = `Prime #${topIndex}: ${value}`;
+          const isContinuousInteraction = isDraggingScrollbar || isTouchScrolling;
+
+          clearTimeout(scrollThrottleTimeout);
+          scrollThrottleTimeout = setTimeout(() => {
+            if (isJumping) {
+              return;
+            }
+            const targetIndex = scrollToIndex(scrollableDiv.scrollTop);
+
+            const indexDiff = currentIndex > targetIndex
+              ? currentIndex - targetIndex
+              : targetIndex - currentIndex;
+
+            if (indexDiff >= SCROLL_UPDATE_THRESHOLD) {
+              try {
+                const pairStrings = init_pair(targetIndex);
+                const primeValue = BigInt(pairStrings[0]);
+                currentIndex = targetIndex;
+                currentPrime = primeValue;
+                renderVisibleWindow(currentIndex, currentPrime);
+              } catch (e) {
+                console.error("Error init_pair on scroll:", e);
+                currentInfo.innerHTML = `<span style="color: red;">Calc Error</span>`;
+              }
+            }
+          }, SCROLL_THROTTLE_MS);
+        });
+
+        async function handleStepScroll(direction) {
+          if (isProcessingStep) return;
+          isProcessingStep = true;
+          isTouchScrolling = false;
+
+          try {
+            let newPairStrings; let finalIndexStr;
+            if (direction === 1 && currentIndex < BigInt(MAX_INDEX)) {
+              newPairStrings = next_pair(); finalIndexStr = get_current_index();
+            } else if (direction === -1 && currentIndex > 1n) {
+              newPairStrings = prev_pair(); finalIndexStr = get_current_index();
+            } else { isProcessingStep = false; return; }
+
+            const newPrimeBigInt = BigInt(newPairStrings[0]);
+            const finalIndexBigInt = BigInt(finalIndexStr);
+
+            currentIndex = finalIndexBigInt;
+            currentPrime = newPrimeBigInt;
+
+            renderVisibleWindow(currentIndex, currentPrime);
+          } catch (e) {
+            console.error(`Error during step ${direction}:`, e);
+            try {
+              const pairStrings = init_pair(currentIndex);
+              currentPrime = BigInt(pairStrings[0]);
+              renderVisibleWindow(currentIndex, currentPrime);
+            } catch (syncErr) {
+              console.error("Failed to re-sync state:", syncErr);
+            }
           }
+          finally {
+            requestAnimationFrame(() => { isProcessingStep = false; });
+          }
+        }
 
-          // --- Scroll event ---
-          scrollableDiv.addEventListener("scroll", () => {
-            requestAnimationFrame(updateView);
-          });
+        scrollableDiv.addEventListener("touchstart", (event) => {
+          if (isDraggingScrollbar) return;
+          if (event.touches.length === 1) {
+            isTouching = true;
+            isTouchScrolling = false;
+            touchStartY = event.touches[0].clientY;
+            clearTimeout(scrollThrottleTimeout);
+          }
+        }, { passive: true });
 
-          // --- Jump to index ---
-          function handleJump() {
-            const indexStr = jumpToInput.value;
-            if (!indexStr) return;
+        scrollableDiv.addEventListener("touchmove", (event) => {
+          if (!isTouching || event.touches.length !== 1) return;
+
+          const currentTouchY = event.touches[0].clientY;
+          const deltaY = currentTouchY - touchStartY;
+
+          if (Math.abs(deltaY) > TOUCH_STEP_THRESHOLD && !isProcessingStep) {
+            event.preventDefault();
+            const direction = deltaY > 0 ? -1 : 1;
+            handleStepScroll(direction);
+            touchStartY = currentTouchY;
+          } else if (!isProcessingStep) {
+            isTouchScrolling = true;
+          }
+        }, { passive: false });
+
+        scrollableDiv.addEventListener("touchend", (event) => {
+          if (isTouching) {
+            isTouching = false;
+            isTouchScrolling = false;
+          }
+        });
+        scrollableDiv.addEventListener("touchcancel", (event) => {
+          if (isTouching) {
+            isTouching = false;
+            isTouchScrolling = false;
+          }
+        });
+
+        scrollableDiv.addEventListener("wheel", (event) => {
+          if (isTouching || isDraggingScrollbar) return;
+          event.preventDefault();
+          const direction = event.deltaY > 0 ? 1 : -1;
+          handleStepScroll(direction);
+        }, { passive: false });
+
+        function handleJump() {
+          const indexStr = jumpToInput.value.trim().replace(/_/g, "");
+          if (!indexStr) return;
+          try {
             let targetIndex = BigInt(indexStr);
-            if (targetIndex < 0) targetIndex = BigInt(0);
-            if (targetIndex >= MAX_PRIME_INDEX)
-              targetIndex = MAX_PRIME_INDEX - BigInt(1);
+            if (targetIndex < 1n) targetIndex = 1n;
+            if (targetIndex > BigInt(MAX_INDEX)) targetIndex = BigInt(MAX_INDEX);
 
-            // Scroll so that targetIndex is at the top
-            const scrollTop = Number(targetIndex) * ITEM_HEIGHT;
-            scrollableDiv.scrollTop = scrollTop;
-            requestAnimationFrame(updateView);
+            console.log(`Jumping to index: ${targetIndex}`);
+            isJumping = true;
 
+            const pairStrings = init_pair(targetIndex);
+            const primeBigInt = BigInt(pairStrings[0]);
+
+            currentIndex = targetIndex;
+            currentPrime = primeBigInt;
+
+            isDraggingScrollbar = false;
+            isTouching = false;
+            isTouchScrolling = false;
+            isProcessingStep = false;
+
+            clearTimeout(scrollThrottleTimeout);
+            scrollableDiv.scrollTop = indexToScroll(currentIndex);
+
+            renderVisibleWindow(currentIndex, currentPrime);
             jumpToInput.value = "";
             jumpToInput.blur();
+          } catch (e) {
+            alert(`Error jumping: ${e}`);
+            console.error("Jump error:", e);
           }
-          jumpToBtn.addEventListener("click", handleJump);
-          jumpToInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") handleJump();
-          });
-
-          // --- Initial render ---
-          updateView();
-        } catch (error) {
-          document.body.innerHTML = `<div style="color:red;padding:2em;">Failed to initialize WebAssembly module: ${error}</div>`;
+          finally {
+            requestAnimationFrame(() => { isJumping = false; });
+          }
         }
-      });
-    </script>
-  </body>
-</html>
 
+        jumpToBtn.addEventListener("click", handleJump);
+        jumpToInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleJump(); });
+
+        window.addEventListener("keydown", (event) => {
+          if (event.target === jumpToInput || event.metaKey || event.ctrlKey) return;
+          let direction = 0;
+          if (event.code === 'Space' || event.key === ' ') {
+            event.preventDefault(); let steps = 0;
+            const scrollInterval = setInterval(() => {
+              if (steps >= SPACEBAR_SCROLL_LINES || currentIndex >= BigInt(MAX_INDEX)) {
+                clearInterval(scrollInterval); return;
+              }
+              handleStepScroll(1); steps++;
+            }, 60); return;
+          } else if (event.key === 'ArrowDown') direction = 1;
+          else if (event.key === 'ArrowUp') direction = -1;
+          if (direction !== 0) { event.preventDefault(); handleStepScroll(direction); }
+        });
+
+        console.log("Initializing at index 1");
+        try {
+          const initialTargetIndex = 1n;
+          const initialPairStrings = init_pair(initialTargetIndex);
+          const initialPrimeBigInt = BigInt(initialPairStrings[0]);
+
+          currentIndex = initialTargetIndex;
+          currentPrime = initialPrimeBigInt;
+
+          scrollableDiv.scrollTop = indexToScroll(currentIndex);
+          renderVisibleWindow(currentIndex, currentPrime);
+        } catch (e) {
+          console.error("Initial render error:", e);
+          document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module or calculate initial prime: ${e}</div>`;
+        }
+      } catch (error) {
+        console.error("Initialization failed:", error);
+        document.body.innerHTML = `<div class="error">Failed to initialize WebAssembly module: ${error}</div>`;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", run);
+  </script>
+</body>
+
+</html>
