@@ -13,7 +13,7 @@
     <h1>(Almost) Every Prime Number</h1>
     <p>Scroll through (a long) sequence of prime numbers.</p>
     <div class="search-container">
-      <input type="text" id="jumpToInput" placeholder="Jump to index (e.g., 1000)..." />
+      <input type="text" id="jumpToInput" placeholder="Jump to index (up to 10^9)..." />
       <button id="jumpToBtn">Go</button>
     </div>
   </header>
@@ -54,9 +54,9 @@
       try {
         await init();
 
-        const SCROLL_HEIGHT = 20000;
+        const SCROLL_HEIGHT = 100000;
         // const MAX_INDEX = 4294967295; // 2^32 - 1
-        const MAX_INDEX = 1n << 27n - 1n;
+        const MAX_INDEX = 1_000_000_000;
         const ITEM_HEIGHT = 30;
         const calculateVisibleItems = () =>
           Math.ceil(window.innerHeight / ITEM_HEIGHT) + 15;

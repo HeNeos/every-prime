@@ -24,16 +24,16 @@
   --subtle-text-color: #6a7f8f;
   --link-color: #008080;
   --link-hover-color: #006060;
-  --button-bg: #008080;
-  --button-text: #ffffff;
+  --button-bg: #ebf4fa;
+  --button-text: #008080;
   --button-border: 1px solid #008080;
-  --button-hover-bg: #006060;
+  --button-hover-bg: #12a4a430;
   --button-hover-border: 1px solid #006060;
   --input-border: #b0c0c0;
   --input-bg: #ffffff;
   --input-focus-border: #008080;
   --item-bg: transparent;
-  --item-hover-bg: #eafafa;
+  --item-hover-bg: #2a979729;
   --item-border: #d8eeee;
   --item-index-color: #6a7f8f;
   --item-value-color: #2a3f4f;
@@ -55,7 +55,7 @@
     "Liberation Mono", Menlo, Courier, monospace;
 
   --item-height: 30px;
-  --border-radius: 4px;
+  --border-radius: 8px;
   --panel-width: 20px;
 }
 
@@ -170,7 +170,7 @@ button {
   background-color: var(--button-bg);
   color: var(--button-text);
   border: var(--button-border);
-  border-radius: var(--border-radius);
+  border-radius: 0px;
   cursor: pointer;
   font-size: 1rem;
   font-family: var(--sans-serif-font);
@@ -192,7 +192,7 @@ button:hover {
   border-radius: var(--border-radius);
   box-shadow: 0 1px 3px var(--info-shadow);
   font-family: var(--monospace-font);
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   z-index: 110;
   white-space: nowrap;
   color: var(--text-color);
@@ -251,7 +251,6 @@ button:hover {
 .panel-btn:first-child {
   border-top-left-radius: 0px;
   border-top-right-radius: 0px;
-  border-bottom: none;
 }
 
 .panel-btn:last-child {
@@ -269,15 +268,16 @@ button:hover {
   overflow-y: scroll;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: scrollbar;
   position: relative;
   touch-action: auto;
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   overscroll-behavior: none;
 }
 
 #scrollableDiv::-webkit-scrollbar {
-  width: 10px;
+  width: 16px;
 }
 
 #scrollableDiv::-webkit-scrollbar-thumb {
@@ -302,7 +302,7 @@ button:hover {
   left: 0;
   right: 0;
   top: 0;
-  max-width: 800px;
+  max-width: 449px;
   margin: 0 auto;
   padding: 0 15px;
   will-change: transform;
@@ -321,7 +321,7 @@ button:hover {
   border-bottom: 1px solid var(--item-border);
   border-radius: 0;
   font-family: var(--monospace-font);
-  font-size: 0.875rem;
+  font-size: 1.0rem;
   box-sizing: border-box;
   overflow: hidden;
   will-change: transform;
@@ -335,7 +335,7 @@ button:hover {
 
 .prime-item .index {
   color: var(--item-index-color);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   min-width: 80px;
   flex-shrink: 0;
   padding-right: 15px;
@@ -421,6 +421,23 @@ footer a:hover {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --panel-width: 19px;
+  }
+
+  #scrollableDiv::-webkit-scrollbar {
+    width: 20px;
+  }
+  #scrollableDiv::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  #scrollableDiv::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 10px;
+    border: 3px solid var(--scrollbar-track);
+  }
+
+
   header {
     padding: 11px 15px;
     height: auto;
@@ -452,7 +469,7 @@ footer a:hover {
     bottom: 50px !important;
     left: 5px !important;
     z-index: 200;
-    font-size: 0.6875rem;
+    font-size: 0.6rem;
   }
 
   #viewport {
@@ -479,7 +496,7 @@ footer a:hover {
   }
 
   footer {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     padding: 0 10px;
   }
 
@@ -489,6 +506,22 @@ footer a:hover {
 }
 
 @media (max-width: 480px) {
+  :root {
+    --panel-width: 17px;
+  }
+
+  #scrollableDiv::-webkit-scrollbar {
+    width: 18px;
+  }
+  #scrollableDiv::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  #scrollableDiv::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 10px;
+    border: 3px solid var(--scrollbar-track);
+  }
+
   header {
     padding: 16px 15px;
     height: auto;
@@ -513,11 +546,11 @@ footer a:hover {
   #current-info {
     left: calc(var(--panel-width) + 10px) !important;
     right: auto;
-    font-size: 0.625rem;
+    font-size: 0.5rem;
   }
 
   .prime-item {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
   }
 
   .prime-item .index {
